@@ -14,20 +14,63 @@ const app = express();
 const client = new line.Client(config);
 
 const handleEvent = async (event) => {
-  if (event.type !== "message" || event.message.type !== "text") {
-    return;
+  // テキストメッセージの処理
+  if (event.type === "message" && event.message.type === "text") {
+    const receivedText = event.message.text;
+    const replyToken = event.replyToken;
+
+    if (receivedText === "トイレ") {
+      const message = {
+        type: "text",
+        text: "現在地を送信してください",
+        quickReply: {
+          items: [
+            {
+              type: "action",
+              action: {
+                type: "location",
+                label: "現在地を送信",
+              },
+            },
+          ],
+        },
+      };
+      try {
+        await client.replyMessage(replyToken, message);
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    }
+
+    const replyText = `あなたが送ったのは${receivedText}`;
+    const message = {
+      type: "text",
+      text: replyText,
+    };
+    try {
+      await client.replyMessage(replyToken, message);
+    } catch (error) {
+      console.error(error);
+    }
   }
-  const recievedText = event.message.text;
-  const replyToken = event.replyToken;
-  const replyText = `あなたが送ったのは${recievedText}`;
-  const message = {
-    type: "text",
-    text: replyText,
-  };
-  try {
-    await client.replyMessage(replyToken, message);
-  } catch (error) {
-    console.error(error);
+  // 位置情報メッセージの処理
+  else if (event.type === "message" && event.message.type === "location") {
+    const { latitude, longitude, address } = event.message;
+    const replyToken = event.replyToken;
+
+    const message = {
+      type: "text",
+      text: `位置情報を受信しました！\n緯度: ${latitude}\n経度: ${longitude}\n住所: ${
+        address || "不明"
+      }`,
+    };
+
+    try {
+      await client.replyMessage(replyToken, message);
+    } catch (error) {
+      console.error(error);
+    }
   }
 };
 
