@@ -11,96 +11,77 @@ const config = {
 const client = new line.Client(config); //今は参照されていませんが、Bot側からメッセージを送信するために必要です!
 const app = express();
 
+const createReplyMessage = (text, quoteToken) => {
+  return {
+    type: "text",
+    text,
+    ...(quoteToken ? { quoteToken } : {}),
+  };
+};
+
+const handleEvent = (event) => {
+  if (event.type == "message") {
+    return handleMessageEvent(event);
+  } else {
+    console.log("それ以外のイベントです");
+  }
+};
+
+const handleMessageEvent = (event) => {
+  console.log(event);
+  switch (event.message.type) {
+    case "text":
+      handleTextMessageEvent(event);
+      break;
+    case "image":
+      console.log("画像です");
+      break;
+    case "video":
+      console.log("動画です");
+      break;
+    case "audio":
+      console.log("音声です");
+      break;
+    case "file":
+      console.log("ファイル送信です");
+      break;
+    case "location":
+      console.log("位置情報です");
+      break;
+    case "sticker":
+      console.log("スタンプです");
+      break;
+    default:
+      console.log("未対応です");
+      break;
+  }
+};
+
+const handleTextMessageEvent = async (event) => {
+  const { type, id, quoteToken, text } = event.message;
+  const replyMessage = createReplyMessage(text, quoteToken);
+  try {
+    await client.replyMessage(event.replyToken, replyMessage);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 app.post("/webhook", line.middleware(config), (req, res) => {
-  console.log("🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥");
-  console.log(req.body);
-  console.log("🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥");
-  console.log(req.body.events);
-  // ここに色々かいていきます!
-  res.json({ status: "ok" });
+  //リクエストのうちeventsプロパティを代入
+  const events = req.body.events;
+  // eventsは複数のWebhookイベントオブジェクトを含む可能性があるので配列になっています。
+  Promise.all(events.map(handleEvent))
+    .then(() => {
+      res.json({ status: "ok" });
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).json({ status: "error" });
+    });
 });
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}...`);
 });
-
-// const handleEvent = async (event) => {
-//   // テキストメッセージの処理
-//   if (req.body.type === "message" && req.body.message.type === "text") {
-//     const receivedText = event.message.text;
-//     const replyToken = event.replyToken;
-
-//     if (receivedText === "トイレ") {
-//       const message = {
-//         type: "text",
-//         text: "現在地を送信してください",
-//         quickReply: {
-//           items: [
-//             {
-//               type: "action",
-//               action: {
-//                 type: "location",
-//                 label: "現在地を送信",
-//               },
-//             },
-//           ],
-//         },
-//       };
-//       try {
-//         await client.replyMessage(replyToken, message);
-//       } catch (error) {
-//         console.error(error);
-//       }
-//       return;
-//     }
-
-//     const replyText = `あなたが送ったのは${receivedText}`;
-//     const message = {
-//       type: "text",
-//       text: replyText,
-//     };
-//     try {
-//       await client.replyMessage(replyToken, message);
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   }
-//   // 位置情報メッセージの処理
-//   else if (event.type === "message" && event.message.type === "location") {
-//     const { latitude, longitude, address } = event.message;
-//     const replyToken = event.replyToken;
-
-//     const message = {
-//       type: "text",
-//       text: `位置情報を受信しました！\n緯度: ${latitude}\n経度: ${longitude}\n住所: ${
-//         address || "不明"
-//       }`,
-//     };
-
-//     try {
-//       await client.replyMessage(replyToken, message);
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   }
-// };
-
-// app.post("/webhook", line.middleware(config), (req, res) => {
-//   const events = req.body.events;
-//   Promise.all(events.map(handleEvent))
-//     .then(() => {
-//       res.json({ status: "ok" });
-//     })
-//     .catch((error) => {
-//       console.error(error);
-//       res.status(500).json({ status: "error" });
-//     });
-
-//   // ここで受信したイベント（メッセージなど）を処理するコードを後で追加
-// });
-
-// const port = process.env.PORT || 3000;
-// app.listen(port, () => {
-//   console.log(`Server listening on port ${port}...`);
-// });
