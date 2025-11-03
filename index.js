@@ -1,8 +1,10 @@
 "use strict";
 require("dotenv").config();
 
+const axios = require("axios");
 const express = require("express");
 const line = require("@line/bot-sdk");
+const overpass = "https://overpass-api.de/api/interpreter";
 
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
@@ -11,7 +13,7 @@ const config = {
 const client = new line.Client(config); //今は参照されていませんが、Bot側からメッセージを送信するために必要です!
 const app = express();
 
-const createReplyMessage = (text, quoteToken) => {
+const createTextMessage = (text, quoteToken) => {
   return {
     type: "text",
     text,
@@ -19,9 +21,41 @@ const createReplyMessage = (text, quoteToken) => {
   };
 };
 
-const handleEvent = (event) => {
+const createQuickReplyMessage = () => {
+  return {
+    type: "text",
+    text: "クイックリプライ", //普通のメッセージ
+    quickReply: {
+      items: [
+        {
+          type: "action",
+          action: {
+            type: "location",
+            label: "位置情報",
+          },
+        },
+        {
+          type: "action",
+          action: {
+            type: "message",
+            label: "トイレ", //見た目
+            text: "トイレ", //実際に送られるテキスト
+          },
+        },
+      ],
+    },
+  };
+};
+
+const handleEvent = async (event) => {
   if (event.type == "message") {
     return handleMessageEvent(event);
+  } else if (event.type == "follow") {
+    try {
+      await client.replyMessage(event.replyToken, createQuickReplyMessage());
+    } catch (error) {
+      console.error(error);
+    }
   } else {
     console.log("それ以外のイベントです");
   }
@@ -33,23 +67,14 @@ const handleMessageEvent = (event) => {
     case "text":
       handleTextMessageEvent(event);
       break;
-    case "image":
-      console.log("画像です");
-      break;
-    case "video":
-      console.log("動画です");
-      break;
-    case "audio":
-      console.log("音声です");
-      break;
-    case "file":
-      console.log("ファイル送信です");
-      break;
     case "location":
       console.log("位置情報です");
       break;
+    case "image":
+    case "video":
+    case "audio":
+    case "file":
     case "sticker":
-      console.log("スタンプです");
       break;
     default:
       console.log("未対応です");
@@ -58,8 +83,13 @@ const handleMessageEvent = (event) => {
 };
 
 const handleTextMessageEvent = async (event) => {
-  const { type, id, quoteToken, text } = event.message;
-  const replyMessage = createReplyMessage(text, quoteToken);
+  const { quoteToken, text } = event.message;
+
+  if (text == "トイレ") {
+    console.log("トイレ");
+  }
+
+  const replyMessage = createTextMessage(text, quoteToken);
   try {
     await client.replyMessage(event.replyToken, replyMessage);
   } catch (error) {
