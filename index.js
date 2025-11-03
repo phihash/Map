@@ -6,13 +6,13 @@ const express = require("express");
 const line = require("@line/bot-sdk");
 const overpass = "https://overpass-api.de/api/interpreter";
 
-const { handleEvent } = require("./lib/handlers");
-
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
-const client = new line.Client(config); //今は参照されていませんが、Bot側からメッセージを送信するために必要です!
+
+const { handleEvent } = require("./lib/handlers");
+
 const app = express();
 
 app.post("/webhook", line.middleware(config), (req, res) => {
