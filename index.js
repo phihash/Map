@@ -1,15 +1,10 @@
 "use strict";
-require("dotenv").config();
 
+const { config, port } = require("./lib/config");
 const axios = require("axios");
 const express = require("express");
 const line = require("@line/bot-sdk");
 const overpass = "https://overpass-api.de/api/interpreter";
-
-const config = {
-  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.LINE_CHANNEL_SECRET,
-};
 
 const { handleEvent } = require("./lib/handlers");
 
@@ -29,7 +24,6 @@ app.post("/webhook", line.middleware(config), (req, res) => {
     });
 });
 
-const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}...`);
 });
