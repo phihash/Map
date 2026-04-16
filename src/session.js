@@ -1,3 +1,4 @@
+"use strict";
 const sessions = new Map();
 
-export { sessions };
+module.exports = { sessions };

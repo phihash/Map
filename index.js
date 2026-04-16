@@ -1,6 +1,9 @@
-import "dotenv/config";
-import express from "express";
-import line from "@line/bot-sdk";
+"use strict";
+require("dotenv").config();
+
+const express = require("express");
+const line = require("@line/bot-sdk");
+const { handleAdd } = require("./src/commands/add");
 
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
@@ -14,11 +17,6 @@ const handleList = (event) => {
   console.log("一覧", event.source.userId);
 };
 
-const handleAdd = (event) => {
-  // TODO: 登録フロー開始
-  console.log("追加", event.source.userId);
-};
-
 const handleDelete = (event) => {
   // TODO: 削除フロー開始
   console.log("削除", event.source.userId);
@@ -30,28 +28,24 @@ const handleEdit = (event) => {
 };
 
 const commands = {
-  "追加": handleAdd,
+  "追加": (event) => handleAdd(event, client),
   "削除": handleDelete,
   "編集": handleEdit,
   "一覧": handleList,
 };
 
-
-
 app.post("/webhook", line.middleware(config), (req, res) => {
-  // ここに色々かいていきます!
   const event = req.body.events[0];
   const text = event.message.text;
   const handler = commands[text];
   if (handler) {
-    handler(event)
-  }  else{
-    console.log("コマンドがありません")
+    handler(event);
+  } else {
+    console.log("コマンドがありません");
   }
 
   res.json({ status: "ok" });
 });
-
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
