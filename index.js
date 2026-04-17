@@ -4,6 +4,7 @@ require("dotenv").config();
 const express = require("express");
 const line = require("@line/bot-sdk");
 const { handleAdd } = require("./src/commands/add");
+const { sessions } = require("./src/session");    
 
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
@@ -37,11 +38,18 @@ const commands = {
 app.post("/webhook", line.middleware(config), (req, res) => {
   const event = req.body.events[0];
   const text = event.message.text;
-  const handler = commands[text];
-  if (handler) {
-    handler(event);
+  const userId = event.source.userId;
+  const session = sessions.get(userId);
+
+  if (session) {
+    handleAdd(event, client);
   } else {
-    console.log("コマンドがありません");
+    const handler = commands[text];
+    if (handler) {
+      handler(event);
+    } else {
+      console.log("コマンドがありません");
+    }
   }
 
   res.json({ status: "ok" });
